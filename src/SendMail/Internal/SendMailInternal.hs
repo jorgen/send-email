@@ -13,23 +13,26 @@ import Data.Aeson
 import Data.HashMap.Strict as M
 import Debug.Trace
 
+import qualified Data.CaseInsensitive as CI
+
 privateImplGetBackend :: Show env => env -> Manager -> FilePath -> IO (Maybe MailTypes.EmailSender)
 privateImplGetBackend env manager mailConfFile = do
-    decodeFile mailConfFile >>= (privateImplGetBackendFromMObject env manager)
+    decodeFileEither mailConfFile >>= (privateImplGetBackendFromMObject env manager)
 
 privateImplGetBackendFromContent :: Show env => env -> Manager -> ByteString -> IO (Maybe MailTypes.EmailSender)
 privateImplGetBackendFromContent env manager mailConfString =
     privateImplGetBackendFromMObject env manager obj
       where
-          obj = Data.Yaml.decode mailConfString :: Maybe Value
+          obj = Data.Yaml.decodeEither' mailConfString
 
-privateImplGetBackendFromMObject :: Show env => env -> Manager -> Maybe Value -> IO (Maybe MailTypes.EmailSender)
-privateImplGetBackendFromMObject _ _ Nothing =
-       fail $ "Invalid SendMail YAML Configuration"
-privateImplGetBackendFromMObject env manager (Just (Object obj))
+privateImplGetBackendFromMObject :: Show env => env -> Manager -> Either ParseException Value -> IO (Maybe MailTypes.EmailSender)
+privateImplGetBackendFromMObject env manager (Right (Object obj))
         | Just v <- M.lookup (Text.pack $ show env) obj = (parseMonad privateImplParseConf v) >>= (getMailSenderFromKey manager)
-privateImplGetBackendFromMObject env _ x =
-        fail $ "Could not find environment: " ++ show env ++ " " ++ show x
+privateImplGetBackendFromMObject env _ x
+  | Prelude.any (\s -> (CI.mk s) == (CI.mk $ show env)) ["Staging", "Production"]
+    = fail $ "Could not create valid MailSender: " ++ show env ++ " " ++ show x
+  | otherwise = return Nothing
+
 
 privateImplParseConf :: Value -> Parser IntTypes.MailServiceConfig
 privateImplParseConf = withObject "SendMail configuration" $ \o -> do

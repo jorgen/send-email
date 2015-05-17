@@ -11,3 +11,5 @@ getEmailSenderFromFile = privateImplGetBackend
 getEmailSenderFromContent :: Show env => env -> Manager -> ByteString -> IO (Maybe MailTypes.EmailSender)
 getEmailSenderFromContent = privateImplGetBackendFromContent
 
+sendMail :: MailTypes.EmailSender -> MailTypes.Email -> IO (Either MailTypes.ErrorMessage MailTypes.OkMessage)
+sendMail (MailTypes.EmailSender sender) email = sender email

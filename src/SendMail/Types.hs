@@ -6,6 +6,8 @@ import Data.Either
 
 newtype PlainTextMail = PlainTextMail Text
     deriving (Show, Eq)
+getPlainTextMail :: PlainTextMail -> Text
+getPlainTextMail (PlainTextMail t) = t
 
 newtype HtmlMail = HtmlMail Text
     deriving (Show, Eq)

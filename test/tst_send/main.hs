@@ -114,8 +114,8 @@ getMailSenderFromOptions options manager = maybe
         e = fromMaybe Development (readMaybe $ Text.unpack $ env options :: Maybe Environment)
         conf = config options
 
-sendMail :: Maybe EmailSender -> ScriptOptions -> IO ()
-sendMail (Just (EmailSender emailSender)) options = do
+sendMail' :: Maybe EmailSender -> ScriptOptions -> IO ()
+sendMail' (Just (EmailSender emailSender)) options = do
     emailSender email
     return ()
       where
@@ -135,7 +135,7 @@ main = do
     scriptArgs <- getScriptArgs
     manager <- newManager conduitManagerSettings
     hPutStrLn stderr $ Text.unpack $ Text.concat ["Config: ", replaceIfEmpty "empty" (to scriptArgs), " : ", from scriptArgs, " : ", fromMaybe (Text.pack $ "\n" ++ (BSC8.unpack defaultYaml)) (config scriptArgs)]
-    getMailSenderFromOptions scriptArgs manager >>= flip sendMail scriptArgs
+    getMailSenderFromOptions scriptArgs manager >>= flip sendMail' scriptArgs
 
 
 
